@@ -14,7 +14,66 @@
         .input-group { display: flex; align-items: center; gap: 10px; }
         input[type="range"] { flex: 1; }
         input[type="number"] { width: 60px; padding: 5px; text-align: center; border: 1px solid #d9d9d9; border-radius: 4px; }
-        .result-box { background: #fafafa; border: 1px dashed #1890ff; border-radius: 8px; padding: 15px; margin-top: 25px; }
+        
+        /* 可视化圆盘样式 */
+        .gauge-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin: 25px 0;
+            position: relative;
+        }
+        .gauge-svg {
+            width: 220px;
+            height: 220px;
+            transform: rotate(135deg);
+        }
+        .gauge-bg {
+            fill: none;
+            stroke: #f0f0f0;
+            stroke-width: 15;
+            stroke-linecap: round;
+        }
+        .gauge-progress {
+            fill: none;
+            stroke: url(#gradient);
+            stroke-width: 15;
+            stroke-linecap: round;
+            stroke-dasharray: 424; /* 2 * PI * 90 * 0.75 */
+            stroke-dashoffset: 424;
+            transition: stroke-dashoffset 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .gauge-center-text {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            text-align: center;
+            width: 100%;
+        }
+        .gauge-score {
+            font-size: 36px;
+            font-weight: 800;
+            color: #1a1a1a;
+            display: block;
+            line-height: 1;
+        }
+        .gauge-label {
+            font-size: 14px;
+            color: #8c8c8c;
+            margin-top: 4px;
+        }
+        .status-msg {
+            margin-top: 15px;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 14px;
+            font-weight: 500;
+        }
+        .status-pass { background: #f6ffed; color: #52c41a; border: 1px solid #b7eb8f; }
+        .status-fail { background: #fff1f0; color: #f5222d; border: 1px solid #ffa39e; }
+
+        .result-box { background: #fafafa; border: 1px dashed #1890ff; border-radius: 8px; padding: 15px; margin-top: 15px; }
         .result-item { display: flex; justify-content: space-between; font-size: 15px; color: #555; margin-bottom: 8px; }
         .total { font-size: 20px; font-weight: bold; color: #f5222d; border-top: 1px solid #e8e8e8; padding-top: 10px; margin-top: 10px; }
     </style>
@@ -78,6 +137,25 @@
             </div>
         </div>
 
+        <!-- 可视化仪表盘 -->
+        <div class="gauge-container">
+            <svg class="gauge-svg" viewBox="0 0 200 200">
+                <defs>
+                    <linearGradient id="gradient" x1="0%" y1="0%" x2="100%" y2="0%">
+                        <stop offset="0%" style="stop-color:#1890ff;stop-opacity:1" />
+                        <stop offset="100%" style="stop-color:#36cfc9;stop-opacity:1" />
+                    </linearGradient>
+                </defs>
+                <circle class="gauge-bg" cx="100" id="gauge_bg" cy="100" r="90" stroke-dasharray="424 565" />
+                <circle class="gauge-progress" cx="100" id="gauge_fill" cy="100" r="90" stroke-dasharray="424 565" />
+            </svg>
+            <div class="gauge-center-text">
+                <span class="gauge-score" id="gauge_score">0.0</span>
+                <span class="gauge-label">总分 (满分 710)</span>
+            </div>
+            <div id="status_msg" class="status-msg">尚未达到及格线，继续加油！</div>
+        </div>
+
         <div class="result-box">
             <div class="result-item"><span>听力折合分：</span><span id="res_ln">0.0</span></div>
             <div class="result-item"><span>阅读折合分：</span><span id="res_rd">0.0</span></div>
@@ -115,10 +193,27 @@
             let score_w = ((w1 / 15) * 106.5) + ((w2 / 15) * 106.5);
             let score_total = score_ln + score_rd + score_w;
 
+            // 更新文本
             document.getElementById('res_ln').innerText = score_ln.toFixed(1);
             document.getElementById('res_rd').innerText = score_rd.toFixed(1);
             document.getElementById('res_w').innerText = score_w.toFixed(1);
             document.getElementById('res_total').innerText = score_total.toFixed(1);
+            document.getElementById('gauge_score').innerText = score_total.toFixed(1);
+
+            // 更新仪表盘圆弧
+            const maxDash = 424;
+            const offset = maxDash - (score_total / 710) * maxDash;
+            document.getElementById('gauge_fill').style.strokeDashoffset = offset;
+
+            // 更新状态提示
+            const statusMsg = document.getElementById('status_msg');
+            if (score_total >= 425) {
+                statusMsg.innerText = "🎉 恭喜！已达到 425 及格线";
+                statusMsg.className = "status-msg status-pass";
+            } else {
+                statusMsg.innerText = "尚未达到 425 及格线，继续加油练习！💪";
+                statusMsg.className = "status-msg status-fail";
+            }
         }
         calc();
     </script>
